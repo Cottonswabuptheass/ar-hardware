@@ -1,147 +1,156 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ฟอร์มสมัครเข้าแคลน</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .form-container {
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: 600;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        textarea {
-            resize: vertical;
-            height: 80px;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AR PC SCANNER</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    body { font-family: 'Prompt', sans-serif; background: #0b0f17; color: #f8fafc; overflow: hidden; }
+    .glass { background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+    #ar-view { position: fixed; inset: 0; display: none; z-index: 40; background: #000; }
+    .a-enter-vr { display: none !important; }
+  </style>
 </head>
-<body>
+<body class="h-screen w-screen flex flex-col items-center justify-center p-6 text-center">
 
-<div class="form-container">
-    <h2>สมัครเข้าแคลน</h2>
-    <form id="clanForm">
-        <div class="form-group">
-            <label for="nickname">ชื่อเล่น:</label>
-            <input type="text" id="nickname" required placeholder="กรอกชื่อเล่นของคุณ">
+  <!-- หน้าแรก: กดเปิดกล้องสแกน -->
+  <div id="home-view" class="max-w-sm w-full space-y-6">
+    <div class="w-20 h-20 mx-auto rounded-3xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center">
+      <span class="material-symbols-outlined text-4xl text-emerald-400">view_in_ar</span>
+    </div>
+    <div class="space-y-1">
+      <h1 class="text-2xl font-bold text-white">สแกนชิ้นส่วนคอมพิวเตอร์ AR</h1>
+      <p class="text-sm text-slate-400">ส่องกล้องไปที่การ์ดเพื่อดูโมเดล 3D และคำอธิบาย</p>
+    </div>
+
+    <button onclick="openCamera()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-4 rounded-2xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 transition">
+      <span class="material-symbols-outlined">photo_camera</span>
+      เปิดกล้องสแกน
+    </button>
+  </div>
+
+  <!-- หน้ากล้อง AR -->
+  <div id="ar-view">
+    <div class="fixed top-4 inset-x-4 z-50 flex items-center justify-between">
+      <span class="glass px-3.5 py-2 rounded-full text-xs text-emerald-400">ส่องกล้องไปที่การ์ดชิ้นส่วน</span>
+      <button onclick="closeCamera()" class="bg-rose-600 text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1 shadow">
+        <span class="material-symbols-outlined text-sm">close</span> ปิดกล้อง
+      </button>
+    </div>
+
+    <!-- การ์ดคำอธิบายเมื่อสแกนเจอ -->
+    <div id="info-card" class="fixed bottom-5 inset-x-4 max-w-md mx-auto z-50 glass rounded-2xl p-4 text-left hidden shadow-2xl">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <span id="info-code" class="text-[11px] font-semibold text-emerald-400">01 • HARDWARE</span>
+          <h2 id="info-title" class="text-lg font-bold text-white">ชื่อชิ้นส่วน</h2>
         </div>
+        <button onclick="hideInfo()" class="text-slate-400 hover:text-white">
+          <span class="material-symbols-outlined">expand_more</span>
+        </button>
+      </div>
+      <p id="info-desc" class="text-sm text-slate-200 mt-2 leading-relaxed">คำอธิบายชิ้นส่วน</p>
+    </div>
 
-        <div class="form-group">
-            <label for="uid">UID:</label>
-            <input type="text" id="uid" required placeholder="กรอก UID ในเกม">
-        </div>
+    <a-scene
+      id="scene"
+      mindar-image="imageTargetSrc: ./targets/targets.mind; autoStart: false; uiLoading: no; uiError: no; uiScanning: no;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false">
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-light type="ambient" intensity="1.3"></a-light>
+      <a-light type="directional" position="1 2 1.5" intensity="1.5"></a-light>
+    </a-scene>
+  </div>
 
-        <div class="form-group">
-            <label for="age">อายุ:</label>
-            <input type="number" id="age" required placeholder="กรอกอายุของคุณ">
-        </div>
+  <script>
+    // แก้ชื่อไฟล์ .glb ใน modelFile ให้ตรงกับในโฟลเดอร์ models/ ของคุณ
+    const parts = [
+      { index: 0, code: "01", name: "การ์ดจอ (GPU)", modelFile: "./models/gpu.glb", desc: "ประมวลผลภาพและกราฟิก 3D ช่วยให้แสดงผลภาพลื่นไหลทั้งการเล่นเกมและงานตัดต่อ" },
+      { index: 1, code: "02", name: "ซีพียู (CPU)", modelFile: "./models/cpu.glb", desc: "หน่วยประมวลผลกลาง เปรียบเสมือนสมองของคอมพิวเตอร์ที่คอยคำนวณคำสั่งต่างๆ" },
+      { index: 2, code: "03", name: "เมนบอร์ด (Motherboard)", modelFile: "./models/motherboard.glb", desc: "แผงวงจรหลักที่เป็นศูนย์กลางเชื่อมต่ออุปกรณ์ทุกชิ้นส่วนเข้าด้วยกัน" },
+      { index: 3, code: "04", name: "แรม (RAM)", modelFile: "./models/ram.glb", desc: "หน่วยความจำชั่วคราว ช่วยให้เปิดโปรแกรมและสลับงานได้รวดเร็วลื่นไหล" },
+      { index: 4, code: "05", name: "เอสเอสดี (SSD)", modelFile: "./models/ssd.glb", desc: "หน่วยเก็บข้อมูลความเร็วสูง ใช้เก็บระบบปฏิบัติการ โปรแกรม และไฟล์งาน" },
+      { index: 5, code: "06", name: "พาวเวอร์ซัพพลาย (PSU)", modelFile: "./models/psu.glb", desc: "ทำหน้าที่แปลงและจ่ายกระแสไฟฟ้าให้ชิ้นส่วนต่างๆ ภายในเครื่องอย่างเสถียร" },
+      { index: 6, code: "07", name: "ชุดระบายความร้อน (Cooler)", modelFile: "./models/cooler.glb", desc: "ช่วยระบายความร้อนออกจากอุปกรณ์ โดยเฉพาะ CPU ไม่ให้ร้อนเกินไปขณะทำงาน" },
+      { index: 7, code: "08", name: "เคส (Case)", modelFile: "./models/case.glb", desc: "โครงสร้างสำหรับยึดประกอบชิ้นส่วนภายใน และช่วยจัดทิศทางการไหลของอากาศ" },
+      { index: 8, code: "09", name: "พัดลมเคส & สายเชื่อมต่อ", modelFile: "./models/fans-cables.glb", desc: "พัดลมช่วยหมุนเวียนลมระบายความร้อนในเคส และสายเชื่อมต่อสัญญาณ/ไฟเลี้ยงอุปกรณ์" },
+      { index: 9, code: "10", name: "จอภาพ (Monitor)", modelFile: "./models/monitor.glb", desc: "อุปกรณ์แสดงผลภาพและข้อมูลจากคอมพิวเตอร์ให้ผู้ใช้งานมองเห็น" }
+    ];
 
-        <div class="form-group">
-            <label for="reason">เหตุผลที่อยากเข้า:</label>
-            <textarea id="reason" required placeholder="ทำไมถึงอยากเข้าแคลนนี้?"></textarea>
-        </div>
+    function initTargets() {
+      const scene = document.getElementById('scene');
+      parts.forEach(part => {
+        const target = document.createElement('a-entity');
+        target.setAttribute('mindar-image-target', `targetIndex: ${part.index}`);
 
-        <div class="form-group">
-            <label for="facebook">เฟสบุ๊ค / ช่องทางติดต่อ:</label>
-            <input type="text" id="facebook" required placeholder="ลิงก์เฟสบุ๊ค หรือ ไอดีไลน์">
-        </div>
+        // โมเดล 3D (.glb)
+        const model = document.createElement('a-gltf-model');
+        model.setAttribute('src', part.modelFile);
+        model.setAttribute('position', '0 0 0.15');
+        model.setAttribute('scale', '0.35 0.35 0.35');
+        model.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 7000; easing: linear');
 
-        <button type="submit" id="submitBtn">ส่งใบสมัคร</button>
-    </form>
-</div>
+        // กล่องสำรองกรณีไฟล์ .glb ยังไม่มีหรือโหลดไม่สำเร็จ
+        const fallback = document.createElement('a-box');
+        fallback.setAttribute('position', '0 0 0.15');
+        fallback.setAttribute('scale', '0.35 0.35 0.35');
+        fallback.setAttribute('color', '#10b981');
+        fallback.setAttribute('visible', 'false');
+        fallback.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 6000; easing: linear');
 
-<script>
-  document.getElementById('clanForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const submitBtn = document.getElementById('submitBtn');
-    submitBtn.innerText = 'กำลังส่งข้อมูล...';
-    submitBtn.disabled = true;
+        model.addEventListener('model-error', () => {
+          model.setAttribute('visible', 'false');
+          fallback.setAttribute('visible', 'true');
+        });
 
-    const data = {
-      nickname: document.getElementById('nickname').value,
-      uid: document.getElementById('uid').value,
-      age: document.getElementById('age').value,
-      reason: document.getElementById('reason').value,
-      facebook: document.getElementById('facebook').value
-    };
+        target.appendChild(model);
+        target.appendChild(fallback);
+        scene.appendChild(target);
 
-    // ลิงก์ Web App URL ของ Google Apps Script
-    const webAppUrl = 'https://script.google.com/macros/s/AKfycbyB0UvvbBK0uhaXhKomlnduRet6MW0Tubp3caIHaBm1VKiwoF1ex3ceVySvLEhBdv0_aQ/exec';
+        target.addEventListener('targetFound', () => {
+          showInfo(part);
+        });
+      });
+    }
 
-    fetch(webAppUrl, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    })
-    .then(() => {
-      alert('ส่งใบสมัครเรียบร้อยแล้ว!');
-      document.getElementById('clanForm').reset();
-      submitBtn.innerText = 'ส่งใบสมัคร';
-      submitBtn.disabled = false;
-    })
-    .catch(error => {
-      alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
-      submitBtn.innerText = 'ส่งใบสมัคร';
-      submitBtn.disabled = false;
-    });
-  });
-</script>
+    function showInfo(part) {
+      document.getElementById('info-code').innerText = `${part.code} • HARDWARE`;
+      document.getElementById('info-title').innerText = part.name;
+      document.getElementById('info-desc').innerText = part.desc;
+      document.getElementById('info-card').classList.remove('hidden');
+    }
 
+    function hideInfo() {
+      document.getElementById('info-card').classList.add('hidden');
+    }
+
+    async function openCamera() {
+      document.getElementById('home-view').style.display = 'none';
+      document.getElementById('ar-view').style.display = 'block';
+      const arSystem = document.getElementById('scene').systems['mindar-image-system'];
+      await arSystem.start();
+    }
+
+    function closeCamera() {
+      const arSystem = document.getElementById('scene').systems['mindar-image-system'];
+      if (arSystem) arSystem.stop();
+      hideInfo();
+      document.getElementById('ar-view').style.display = 'none';
+      document.getElementById('home-view').style.display = 'block';
+    }
+
+    window.addEventListener('DOMContentLoaded', initTargets);
+  </script>
 </body>
 </html>
